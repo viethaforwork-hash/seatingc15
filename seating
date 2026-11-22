@@ -1,0 +1,1461 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sơ Đồ Chỗ Ngồi - Lớp 10A15</title>
+    <!-- Font Inter cho giao diện tiếng Việt sắc nét -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- SheetJS (xlsx) để đọc và xuất file Excel DS TKMK.xlsx -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col selection:bg-indigo-100 selection:text-indigo-700">
+
+    <!-- ==================== THANH ĐIỀU HƯỚNG (HEADER) ==================== -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-3">
+            <!-- Logo & Tiêu đề lớp -->
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-600 to-blue-500 text-white flex items-center justify-center font-extrabold text-sm shadow-md shadow-indigo-200">
+                    10A15
+                </div>
+                <div>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <h1 class="text-lg sm:text-xl font-bold text-slate-900 leading-tight">Sơ Đồ Chỗ Ngồi Lớp 10A15</h1>
+                        <span id="realtimeBadge" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                            <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                            Đang kết nối...
+                        </span>
+                    </div>
+                    <p class="text-xs text-slate-500">6 hàng (A–F) • 4 cột (1–4) • 24 bàn đôi (48 chỗ)</p>
+                </div>
+            </div>
+
+            <!-- Trạng thái đăng nhập & Nút chức năng -->
+            <div id="headerActions" class="flex flex-wrap items-center gap-2">
+                <!-- Nội dung được render tự động bằng JavaScript -->
+            </div>
+        </div>
+    </header>
+
+    <!-- ==================== NỘI DUNG CHÍNH ==================== -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+        <!-- Thông báo hướng dẫn nhập file Excel nếu đang dùng dữ liệu mẫu -->
+        <div id="sampleDataBanner" class="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-sm">
+            <div class="flex items-start gap-3">
+                <div class="p-2 bg-amber-100 text-amber-700 rounded-xl shrink-0">
+                    <i data-lucide="file-spreadsheet" class="w-5 h-5"></i>
+                </div>
+                <div class="text-sm text-amber-900">
+                    <p class="font-semibold">Đang sử dụng danh sách học sinh mẫu (48 học sinh).</p>
+                    <p class="text-amber-700 mt-0.5">Quản trị viên hãy tải lên file mới nhất <strong>DS TKMK_2.xlsx</strong> (Cột A: Tài khoản, Cột C: Mật khẩu) để đồng bộ ngay cho toàn bộ lớp 10A15.</p>
+                </div>
+            </div>
+            <button onclick="handleQuickImportClick()" class="shrink-0 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold rounded-xl transition shadow-sm flex items-center gap-2 cursor-pointer">
+                <i data-lucide="upload" class="w-4 h-4"></i>
+                <span>Nhập DS TKMK_2.xlsx</span>
+            </button>
+        </div>
+
+        <!-- ==================== BẢNG ĐIỀU KHIỂN QUẢN TRỊ VIÊN ==================== -->
+        <section id="adminPanel" class="hidden bg-gradient-to-r from-slate-900 to-indigo-950 text-white rounded-2xl p-5 shadow-lg">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                <div>
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-indigo-200 text-xs font-semibold mb-2">
+                        <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
+                        <span>Chế độ Quản trị viên (nguyenvietha)</span>
+                    </div>
+                    <h2 class="text-lg font-bold">Công cụ quản lý lớp 10A15</h2>
+                    <p class="text-xs sm:text-sm text-slate-300 mt-0.5">Nhấn vào <strong>ghế trống</strong> để đăng ký trước cho học sinh, hoặc nhấn vào <strong>ghế đã có người</strong> để hủy đăng ký.</p>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-2.5">
+                    <!-- Input ẩn để chọn file Excel -->
+                    <input type="file" id="excelFileInput" accept=".xlsx,.xls,.csv" class="hidden" onchange="handleExcelUpload(event)">
+                    
+                    <button onclick="document.getElementById('excelFileInput').click()" class="px-3.5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold rounded-xl transition flex items-center gap-2 shadow-sm cursor-pointer">
+                        <i data-lucide="file-up" class="w-4 h-4"></i>
+                        <span>Nhập Excel (DS TKMK_2)</span>
+                    </button>
+
+                    <button onclick="openStudentListModal()" class="px-3.5 py-2.5 bg-white/10 hover:bg-white/20 text-white text-sm font-semibold rounded-xl transition flex items-center gap-2 border border-white/15 cursor-pointer">
+                        <i data-lucide="users" class="w-4 h-4"></i>
+                        <span>Danh sách HS (<span id="adminStudentCount">0</span>)</span>
+                    </button>
+
+                    <button onclick="exportSeatingToExcel()" class="px-3.5 py-2.5 bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-semibold rounded-xl transition flex items-center gap-2 shadow-sm cursor-pointer">
+                        <i data-lucide="download" class="w-4 h-4"></i>
+                        <span>Xuất sơ đồ Excel</span>
+                    </button>
+
+                    <button onclick="confirmClearAllSeats()" class="px-3.5 py-2.5 bg-rose-500/20 hover:bg-rose-600 text-rose-200 hover:text-white text-sm font-semibold rounded-xl transition flex items-center gap-2 border border-rose-400/30 cursor-pointer">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        <span>Xóa toàn bộ</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== THỐNG KÊ & CHÚ THÍCH ==================== -->
+        <section class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex items-center gap-3.5">
+                <div class="w-11 h-11 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center shrink-0">
+                    <i data-lucide="armchair" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <p class="text-xs font-medium text-slate-500">Tổng số chỗ ngồi</p>
+                    <p id="statTotal" class="text-xl font-extrabold text-slate-900">48</p>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex items-center gap-3.5">
+                <div class="w-11 h-11 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                    <i data-lucide="user-check" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <p class="text-xs font-medium text-slate-500">Đã đăng ký</p>
+                    <p id="statOccupied" class="text-xl font-extrabold text-indigo-600">0</p>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex items-center gap-3.5">
+                <div class="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                    <i data-lucide="check-circle-2" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <p class="text-xs font-medium text-slate-500">Còn trống</p>
+                    <p id="statAvailable" class="text-xl font-extrabold text-emerald-600">48</p>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex items-center gap-3.5">
+                <div class="w-11 h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                    <i data-lucide="graduation-cap" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <p class="text-xs font-medium text-slate-500">Tài khoản HS</p>
+                    <p id="statStudents" class="text-xl font-extrabold text-blue-600">0</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Chú thích màu sắc -->
+        <div class="flex flex-wrap items-center justify-between gap-3 bg-white px-4 py-3 rounded-2xl border border-slate-200 shadow-sm text-xs sm:text-sm">
+            <div class="flex flex-wrap items-center gap-4">
+                <span class="flex items-center gap-2 font-medium text-slate-600">
+                    <span class="w-4 h-4 rounded-md bg-white border-2 border-dashed border-slate-300 inline-block"></span>
+                    Ghế trống
+                </span>
+                <span class="flex items-center gap-2 font-medium text-slate-600">
+                    <span class="w-4 h-4 rounded-md bg-indigo-100 border border-indigo-300 inline-block"></span>
+                    Đã có học sinh
+                </span>
+                <span class="flex items-center gap-2 font-medium text-slate-600">
+                    <span class="w-4 h-4 rounded-md bg-emerald-500 border border-emerald-600 inline-block"></span>
+                    Chỗ ngồi của bạn
+                </span>
+            </div>
+            <div id="userHintText" class="text-slate-500 font-medium">
+                Vui lòng đăng nhập để chọn chỗ ngồi.
+            </div>
+        </div>
+
+        <!-- ==================== SƠ ĐỒ LỚP HỌC (BẢNG CHỌN CHỖ) ==================== -->
+        <section class="bg-white rounded-3xl border border-slate-200 shadow-sm p-4 sm:p-6 overflow-x-auto">
+            <div class="min-w-[820px]">
+                <!-- Bảng đen & Bục giảng -->
+                <div class="mb-7 flex flex-col items-center">
+                    <div class="w-2/3 max-w-xl bg-gradient-to-b from-emerald-800 to-emerald-900 text-emerald-50 py-3 px-6 rounded-2xl text-center font-bold tracking-wider uppercase text-sm shadow-md border-4 border-amber-800/70">
+                        Bảng Đen • Bục Giảng (Phía Trước Lớp)
+                    </div>
+                    <div class="mt-2 text-xs text-slate-400 font-medium">Hàng A gần bảng nhất • Hàng F cuối lớp</div>
+                </div>
+
+                <!-- Tiêu đề các cột (1, 2, 3, 4) -->
+                <div class="grid grid-cols-[44px_1fr_1fr_24px_1fr_1fr] gap-3 mb-3 px-1">
+                    <div></div>
+                    <div class="text-center text-xs font-bold uppercase tracking-wider text-slate-500 bg-slate-100 py-1.5 rounded-lg">Cột 1 (Tổ 1)</div>
+                    <div class="text-center text-xs font-bold uppercase tracking-wider text-slate-500 bg-slate-100 py-1.5 rounded-lg">Cột 2 (Tổ 2)</div>
+                    <div class="text-center text-[10px] font-semibold text-slate-300 flex items-center justify-center">Lối đi</div>
+                    <div class="text-center text-xs font-bold uppercase tracking-wider text-slate-500 bg-slate-100 py-1.5 rounded-lg">Cột 3 (Tổ 3)</div>
+                    <div class="text-center text-xs font-bold uppercase tracking-wider text-slate-500 bg-slate-100 py-1.5 rounded-lg">Cột 4 (Tổ 4)</div>
+                </div>
+
+                <!-- Lưới 6 hàng A-F x 4 cột bàn đôi -->
+                <div id="seatingGrid" class="space-y-3.5">
+                    <!-- Nội dung sơ đồ được render bằng JavaScript -->
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- ==================== FOOTER ==================== -->
+    <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500 mt-auto">
+        Hệ thống đăng ký chỗ ngồi lớp <strong>10A15</strong> • Thiết kế tối ưu cho máy tính và điện thoại
+    </footer>
+
+    <!-- ==================== CÁC MODAL TƯƠNG TÁC ==================== -->
+
+    <!-- 1. Modal Đăng nhập Học sinh -->
+    <div id="studentLoginModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 animate-[fadeIn_0.15s_ease-out]">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center">
+                        <i data-lucide="user-circle" class="w-5 h-5"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-900">Đăng nhập Học sinh</h3>
+                </div>
+                <button onclick="closeModal('studentLoginModal')" class="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition cursor-pointer">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <p class="text-xs text-slate-500 mb-4 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                Nhập <strong>Tài khoản</strong> (Cột A trong file <strong>DS TKMK_2.xlsx</strong>) và <strong>Mật khẩu</strong> tương ứng ở Cột C.
+            </p>
+
+            <form onsubmit="handleStudentLogin(event)" class="space-y-4">
+                <div>
+                    <label for="studentUsername" class="block text-sm font-semibold text-slate-700 mb-1.5">Tài khoản (Cột A)</label>
+                    <input type="text" id="studentUsername" required placeholder="Nhập tài khoản ở cột A..."
+                        class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition text-sm">
+                </div>
+                <div>
+                    <label for="studentPassword" class="block text-sm font-semibold text-slate-700 mb-1.5">Mật khẩu (Cột C)</label>
+                    <input type="password" id="studentPassword" required placeholder="Nhập mật khẩu ở cột C..."
+                        class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition text-sm">
+                </div>
+
+                <div id="studentLoginError" class="hidden text-xs font-medium text-rose-600 bg-rose-50 border border-rose-200 p-3 rounded-xl"></div>
+
+                <div class="flex items-center justify-end gap-2 pt-2">
+                    <button type="button" onclick="closeModal('studentLoginModal')" class="px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition cursor-pointer">
+                        Hủy
+                    </button>
+                    <button type="submit" class="px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm transition cursor-pointer">
+                        Đăng nhập
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 2. Modal Đăng nhập Quản trị viên -->
+    <div id="adminLoginModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-xl bg-slate-900 text-white flex items-center justify-center">
+                        <i data-lucide="shield" class="w-5 h-5"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-900">Đăng nhập Quản trị viên</h3>
+                </div>
+                <button onclick="closeModal('adminLoginModal')" class="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition cursor-pointer">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <form onsubmit="handleAdminLogin(event)" class="space-y-4">
+                <div>
+                    <label for="adminUsername" class="block text-sm font-semibold text-slate-700 mb-1.5">Tài khoản quản trị</label>
+                    <input type="text" id="adminUsername" required placeholder="Nhập tài khoản..."
+                        class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:border-slate-800 focus:ring-2 focus:ring-slate-200 outline-none transition text-sm">
+                </div>
+                <div>
+                    <label for="adminPassword" class="block text-sm font-semibold text-slate-700 mb-1.5">Mật khẩu</label>
+                    <input type="password" id="adminPassword" required placeholder="Nhập mật khẩu..."
+                        class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:border-slate-800 focus:ring-2 focus:ring-slate-200 outline-none transition text-sm">
+                </div>
+
+                <div id="adminLoginError" class="hidden text-xs font-medium text-rose-600 bg-rose-50 border border-rose-200 p-3 rounded-xl"></div>
+
+                <div class="flex items-center justify-end gap-2 pt-2">
+                    <button type="button" onclick="closeModal('adminLoginModal')" class="px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition cursor-pointer">
+                        Hủy
+                    </button>
+                    <button type="submit" class="px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 shadow-sm transition cursor-pointer">
+                        Xác nhận
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 3. Modal Quản trị viên đăng ký trước cho học sinh -->
+    <div id="adminAssignModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+        <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 flex flex-col max-h-[85vh]">
+            <div class="flex items-center justify-between mb-3">
+                <div>
+                    <h3 class="text-lg font-bold text-slate-900">Đăng ký trước cho học sinh</h3>
+                    <p id="assignSeatLabel" class="text-sm font-semibold text-indigo-600 mt-0.5">Vị trí: Bàn A1 - Ghế 1</p>
+                </div>
+                <button onclick="closeModal('adminAssignModal')" class="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition cursor-pointer">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Ô tìm kiếm học sinh -->
+            <div class="relative mb-3">
+                <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+                <input type="text" id="assignSearchInput" oninput="renderAdminAssignList()" placeholder="Tìm kiếm họ tên học sinh chưa có chỗ..."
+                    class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none text-sm">
+            </div>
+
+            <!-- Danh sách học sinh chưa có chỗ -->
+            <div id="adminAssignList" class="flex-1 overflow-y-auto space-y-1.5 pr-1 min-h-[180px] max-h-[300px] border border-slate-100 rounded-2xl p-2 bg-slate-50">
+                <!-- Render tự động -->
+            </div>
+
+            <!-- Hoặc nhập tên thủ công -->
+            <div class="mt-4 pt-4 border-t border-slate-200">
+                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Hoặc nhập nhanh tên học sinh ngoài danh sách</label>
+                <div class="flex gap-2">
+                    <input type="text" id="manualStudentName" placeholder="Nhập họ và tên..."
+                        class="flex-1 px-3.5 py-2 rounded-xl border border-slate-300 focus:border-indigo-500 outline-none text-sm">
+                    <button onclick="assignManualStudent()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl transition cursor-pointer shrink-0">
+                        Xếp chỗ
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. Modal Danh sách học sinh (Dành cho Quản trị viên) -->
+    <div id="studentListModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+        <div class="bg-white rounded-3xl max-w-3xl w-full p-6 shadow-2xl border border-slate-100 flex flex-col max-h-[88vh]">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h3 class="text-lg font-bold text-slate-900">Danh sách tài khoản học sinh lớp 10A15</h3>
+                    <p id="studentListSubtitle" class="text-xs text-slate-500 mt-0.5">Tổng số: 0 học sinh</p>
+                </div>
+                <button onclick="closeModal('studentListModal')" class="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition cursor-pointer">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-2 mb-3">
+                <div class="relative flex-1">
+                    <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+                    <input type="text" id="studentListSearch" oninput="renderStudentListTable()" placeholder="Tìm theo tên hoặc vị trí ghế..."
+                        class="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-300 focus:border-indigo-500 outline-none text-sm">
+                </div>
+                <button onclick="toggleShowPasswords()" id="togglePwdBtn" class="px-3.5 py-2 rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer">
+                    <i data-lucide="eye" class="w-4 h-4"></i>
+                    <span>Hiện mật khẩu</span>
+                </button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto border border-slate-200 rounded-2xl">
+                <table class="w-full text-left border-collapse text-sm">
+                    <thead class="bg-slate-50 sticky top-0 border-b border-slate-200 text-xs uppercase text-slate-500">
+                        <tr>
+                            <th class="py-3 px-4 font-semibold w-12">STT</th>
+                            <th class="py-3 px-4 font-semibold">Tài khoản (Cột A)</th>
+                            <th class="py-3 px-4 font-semibold">Mật khẩu (Cột C)</th>
+                            <th class="py-3 px-4 font-semibold">Vị trí ngồi</th>
+                            <th class="py-3 px-4 font-semibold text-right">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="studentListTableBody" class="divide-y divide-slate-100">
+                        <!-- Render tự động -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. Modal Xác nhận dùng chung (Thay thế hoàn toàn alert/confirm) -->
+    <div id="confirmModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100">
+            <div class="flex items-start gap-3.5 mb-4">
+                <div id="confirmIconBox" class="w-10 h-10 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center shrink-0">
+                    <i data-lucide="help-circle" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <h3 id="confirmTitle" class="text-lg font-bold text-slate-900">Xác nhận</h3>
+                    <p id="confirmMessage" class="text-sm text-slate-600 mt-1 leading-relaxed"></p>
+                </div>
+            </div>
+            <div class="flex items-center justify-end gap-2 pt-2">
+                <button onclick="closeModal('confirmModal')" class="px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition cursor-pointer">
+                    Đóng
+                </button>
+                <button id="confirmActionBtn" class="px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm transition cursor-pointer">
+                    Đồng ý
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== THÔNG BÁO NỔI (TOAST) ==================== -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
+
+    <!-- ==================== LOGIC JAVASCRIPT (REAL-TIME SYNC) ==================== -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import {
+            getFirestore,
+            doc,
+            setDoc,
+            deleteDoc,
+            collection,
+            onSnapshot,
+            getDocs,
+            writeBatch
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // ==========================================
+        // 1. CẤU HÌNH LỚP HỌC & ĐỒNG BỘ THỜI GIAN THỰC
+        // ==========================================
+        const ROWS = ['A', 'B', 'C', 'D', 'E', 'F'];
+        const COLS = [1, 2, 3, 4];
+        const SEATS_PER_DESK = 2; // Mỗi bàn là ghế đôi (2 học sinh)
+
+        // Thông tin tài khoản quản trị viên theo yêu cầu
+        const ADMIN_CREDENTIALS = {
+            username: 'nguyenvietha',
+            password: 'oliviaispretty'
+        };
+
+        // Biến kết nối đồng bộ thời gian thực
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        let db = null;
+        let auth = null;
+        let currentAuthUser = null;
+        let isRealtimeConnected = false;
+
+        // Danh sách học sinh mẫu (sẽ được thay thế hoàn toàn khi nhập file DS TKMK_2.xlsx)
+        function createSampleStudents() {
+            const ho = ['Nguyễn', 'Trần', 'Lê', 'Phạm', 'Hoàng', 'Huỳnh', 'Phan', 'Vũ', 'Võ', 'Đặng', 'Bùi', 'Đỗ'];
+            const dem = ['Văn', 'Thị', 'Minh', 'Gia', 'Ngọc', 'Quốc', 'Thanh', 'Hoài', 'Đức', 'Phương', 'Khánh', 'Thảo'];
+            const ten = ['An', 'Bình', 'Châu', 'Dũng', 'Hà', 'Hải', 'Hân', 'Huy', 'Khang', 'Linh', 'Long', 'Mai', 'Nam', 'Nga', 'Nhi', 'Phúc', 'Quân', 'Quỳnh', 'Tâm', 'Thảo', 'Trang', 'Trung', 'Tú', 'Vy'];
+            const list = [];
+            for (let i = 0; i < 48; i++) {
+                const fullName = `${ho[i % ho.length]} ${dem[(i * 3) % dem.length]} ${ten[i % ten.length]}`;
+                const password = String(101501 + i);
+                list.push({
+                    id: `sample_${i + 1}`,
+                    fullName: fullName,
+                    password: password
+                });
+            }
+            return list;
+        }
+
+        // Trạng thái ứng dụng
+        const state = {
+            students: createSampleStudents(),
+            isSampleData: true,
+            loadedFileName: '',
+            // Map lưu chỗ ngồi: key = "A1-1", value = { studentId, fullName, assignedBy }
+            seats: {},
+            // Người dùng hiện tại: null | { role: 'admin', name: 'nguyenvietha' } | { role: 'student', studentId, fullName }
+            currentUser: null,
+            selectedSeatKeyForAdmin: null,
+            showPasswordsInModal: false
+        };
+
+        function updateRealtimeBadge(status) {
+            const badge = document.getElementById('realtimeBadge');
+            if (!badge) return;
+            if (status === 'connected') {
+                badge.className = 'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200';
+                badge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>Trực tuyến • Thời gian thực';
+            } else if (status === 'connecting') {
+                badge.className = 'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200';
+                badge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>Đang kết nối...';
+            } else {
+                badge.className = 'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-600 border border-slate-200';
+                badge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>Chế độ cục bộ';
+            }
+        }
+
+        // Khởi tạo đồng bộ thời gian thực (Auth trước -> Lắng nghe dữ liệu sau)
+        async function initRealtimeSync() {
+            if (!firebaseConfig) {
+                updateRealtimeBadge('offline');
+                return;
+            }
+
+            try {
+                updateRealtimeBadge('connecting');
+                const app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+
+                // Bắt buộc xác thực trước khi truy vấn dữ liệu
+                let userCredential;
+                if (initialAuthToken) {
+                    userCredential = await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    userCredential = await signInAnonymously(auth);
+                }
+                currentAuthUser = userCredential.user;
+                if (!currentAuthUser) return;
+
+                isRealtimeConnected = true;
+                updateRealtimeBadge('connected');
+
+                // 1. Lắng nghe thay đổi sơ đồ chỗ ngồi theo thời gian thực
+                const seatsColRef = collection(db, 'artifacts', appId, 'public', 'data', 'seats_10a15');
+                onSnapshot(
+                    seatsColRef,
+                    (snapshot) => {
+                        const updatedSeats = {};
+                        snapshot.forEach((docSnap) => {
+                            const data = docSnap.data();
+                            if (data && data.fullName) {
+                                updatedSeats[docSnap.id] = {
+                                    studentId: data.studentId || docSnap.id,
+                                    fullName: data.fullName,
+                                    assignedBy: data.assignedBy || 'student'
+                                };
+                            }
+                        });
+                        state.seats = updatedSeats;
+                        renderApp();
+
+                        // Nếu modal danh sách học sinh hoặc gán chỗ đang mở thì cập nhật luôn
+                        if (!document.getElementById('studentListModal').classList.contains('hidden')) {
+                            renderStudentListTable();
+                        }
+                        if (!document.getElementById('adminAssignModal').classList.contains('hidden')) {
+                            renderAdminAssignList();
+                        }
+                    },
+                    (error) => {
+                        console.error('Lỗi đồng bộ sơ đồ chỗ ngồi:', error);
+                        showToast('Mất kết nối đồng bộ sơ đồ chỗ ngồi.', 'error');
+                    }
+                );
+
+                // 2. Lắng nghe danh sách tài khoản học sinh (file Excel) theo thời gian thực
+                const rosterDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'config_10a15', 'roster');
+                onSnapshot(
+                    rosterDocRef,
+                    (docSnap) => {
+                        if (docSnap.exists()) {
+                            const data = docSnap.data();
+                            if (Array.isArray(data.students) && data.students.length > 0) {
+                                state.students = data.students;
+                                state.isSampleData = Boolean(data.isSampleData);
+                                state.loadedFileName = data.fileName || 'DS TKMK_2.xlsx';
+                                renderApp();
+                                if (!document.getElementById('studentListModal').classList.contains('hidden')) {
+                                    renderStudentListTable();
+                                }
+                            }
+                        }
+                    },
+                    (error) => {
+                        console.error('Lỗi đồng bộ danh sách học sinh:', error);
+                    }
+                );
+            } catch (err) {
+                console.error('Không thể khởi tạo đồng bộ thời gian thực:', err);
+                isRealtimeConnected = false;
+                updateRealtimeBadge('offline');
+            }
+        }
+
+        // Các hàm ghi dữ liệu lên máy chủ đồng bộ
+        async function saveSeatToCloud(seatKey, seatData) {
+            state.seats[seatKey] = seatData;
+            renderApp();
+            if (!isRealtimeConnected || !db || !currentAuthUser) return;
+            try {
+                const seatRef = doc(db, 'artifacts', appId, 'public', 'data', 'seats_10a15', seatKey);
+                await setDoc(seatRef, {
+                    ...seatData,
+                    updatedAt: Date.now()
+                });
+            } catch (err) {
+                console.error('Lỗi lưu chỗ ngồi:', err);
+                showToast('Không thể đồng bộ chỗ ngồi lên máy chủ.', 'error');
+            }
+        }
+
+        async function deleteSeatFromCloud(seatKey) {
+            delete state.seats[seatKey];
+            renderApp();
+            if (!isRealtimeConnected || !db || !currentAuthUser) return;
+            try {
+                const seatRef = doc(db, 'artifacts', appId, 'public', 'data', 'seats_10a15', seatKey);
+                await deleteDoc(seatRef);
+            } catch (err) {
+                console.error('Lỗi xóa chỗ ngồi:', err);
+                showToast('Không thể đồng bộ hủy chỗ lên máy chủ.', 'error');
+            }
+        }
+
+        async function moveSeatInCloud(oldSeatKey, newSeatKey, seatData) {
+            delete state.seats[oldSeatKey];
+            state.seats[newSeatKey] = seatData;
+            renderApp();
+            if (!isRealtimeConnected || !db || !currentAuthUser) return;
+            try {
+                const batch = writeBatch(db);
+                const oldRef = doc(db, 'artifacts', appId, 'public', 'data', 'seats_10a15', oldSeatKey);
+                const newRef = doc(db, 'artifacts', appId, 'public', 'data', 'seats_10a15', newSeatKey);
+                batch.delete(oldRef);
+                batch.set(newRef, { ...seatData, updatedAt: Date.now() });
+                await batch.commit();
+            } catch (err) {
+                console.error('Lỗi chuyển chỗ:', err);
+                showToast('Không thể đồng bộ chuyển chỗ lên máy chủ.', 'error');
+            }
+        }
+
+        async function clearAllSeatsInCloud() {
+            state.seats = {};
+            renderApp();
+            if (!isRealtimeConnected || !db || !currentAuthUser) return;
+            try {
+                const seatsColRef = collection(db, 'artifacts', appId, 'public', 'data', 'seats_10a15');
+                const snap = await getDocs(seatsColRef);
+                const batch = writeBatch(db);
+                snap.forEach((docSnap) => batch.delete(docSnap.ref));
+                await batch.commit();
+            } catch (err) {
+                console.error('Lỗi xóa toàn bộ sơ đồ:', err);
+                showToast('Không thể xóa toàn bộ sơ đồ trên máy chủ.', 'error');
+            }
+        }
+
+        async function saveRosterToCloud(studentsList, fileName) {
+            state.students = studentsList;
+            state.isSampleData = false;
+            state.loadedFileName = fileName;
+            renderApp();
+            if (!isRealtimeConnected || !db || !currentAuthUser) return;
+            try {
+                const rosterDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'config_10a15', 'roster');
+                await setDoc(rosterDocRef, {
+                    students: studentsList,
+                    isSampleData: false,
+                    fileName: fileName,
+                    updatedAt: Date.now()
+                });
+            } catch (err) {
+                console.error('Lỗi đồng bộ danh sách Excel:', err);
+                showToast('Đã nhập cục bộ nhưng không thể đồng bộ danh sách lên máy chủ.', 'warning');
+            }
+        }
+
+        // ==========================================
+        // 2. HÀM TIỆN ÍCH & HIỂN THỊ THÔNG BÁO
+        // ==========================================
+        function normalizeText(str) {
+            return String(str || '').trim().replace(/\s+/g, ' ').toLowerCase();
+        }
+
+        function formatSeatName(seatKey) {
+            if (!seatKey) return '';
+            const [desk, seatNum] = seatKey.split('-');
+            return `Bàn ${desk} - Ghế ${seatNum}`;
+        }
+
+        function getShortDisplayName(fullName) {
+            const parts = String(fullName || '').trim().split(/\s+/);
+            if (parts.length <= 2) return fullName;
+            return parts.slice(-2).join(' ');
+        }
+
+        function findSeatByStudentId(studentId) {
+            if (!studentId) return null;
+            for (const [seatKey, info] of Object.entries(state.seats)) {
+                if (info && info.studentId === studentId) return seatKey;
+            }
+            return null;
+        }
+
+        function findSeatByStudentName(fullName) {
+            const target = normalizeText(fullName);
+            if (!target) return null;
+            for (const [seatKey, info] of Object.entries(state.seats)) {
+                if (info && normalizeText(info.fullName) === target) return seatKey;
+            }
+            return null;
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            if (!container) return;
+
+            const colors = {
+                success: 'bg-emerald-600 text-white border-emerald-700',
+                error: 'bg-rose-600 text-white border-rose-700',
+                warning: 'bg-amber-500 text-white border-amber-600',
+                info: 'bg-slate-800 text-white border-slate-900'
+            };
+
+            const toast = document.createElement('div');
+            toast.className = `pointer-events-auto px-4 py-3 rounded-2xl shadow-lg border text-sm font-medium flex items-center justify-between gap-3 transition-all duration-300 ${colors[type] || colors.info}`;
+            toast.innerHTML = `
+                <span>${message}</span>
+                <button class="opacity-75 hover:opacity-100 shrink-0 cursor-pointer" onclick="this.parentElement.remove()">✕</button>
+            `;
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+
+        // ==========================================
+        // 3. QUẢN LÝ MODAL & HỘP THOẠI XÁC NHẬN
+        // ==========================================
+        function openModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (!modal) return;
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (!modal) return;
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function showConfirmModal({ title, message, confirmText = 'Đồng ý', type = 'primary', onConfirm }) {
+            document.getElementById('confirmTitle').textContent = title;
+            document.getElementById('confirmMessage').innerHTML = message;
+
+            const iconBox = document.getElementById('confirmIconBox');
+            const actionBtn = document.getElementById('confirmActionBtn');
+            actionBtn.textContent = confirmText;
+
+            if (type === 'danger') {
+                iconBox.className = 'w-10 h-10 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0';
+                actionBtn.className = 'px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-rose-600 hover:bg-rose-700 shadow-sm transition cursor-pointer';
+            } else {
+                iconBox.className = 'w-10 h-10 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center shrink-0';
+                actionBtn.className = 'px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm transition cursor-pointer';
+            }
+
+            // Gán sự kiện mới (tránh trùng lặp listener)
+            const newBtn = actionBtn.cloneNode(true);
+            actionBtn.parentNode.replaceChild(newBtn, actionBtn);
+            newBtn.addEventListener('click', async () => {
+                closeModal('confirmModal');
+                if (typeof onConfirm === 'function') {
+                    await onConfirm();
+                }
+            });
+
+            openModal('confirmModal');
+            lucide.createIcons();
+        }
+
+        // ==========================================
+        // 4. ĐĂNG NHẬP / ĐĂNG XUẤT
+        // ==========================================
+        function openStudentLoginModal() {
+            document.getElementById('studentUsername').value = '';
+            document.getElementById('studentPassword').value = '';
+            document.getElementById('studentLoginError').classList.add('hidden');
+            openModal('studentLoginModal');
+            setTimeout(() => document.getElementById('studentUsername').focus(), 100);
+        }
+
+        function openAdminLoginModal() {
+            document.getElementById('adminUsername').value = '';
+            document.getElementById('adminPassword').value = '';
+            document.getElementById('adminLoginError').classList.add('hidden');
+            openModal('adminLoginModal');
+            setTimeout(() => document.getElementById('adminUsername').focus(), 100);
+        }
+
+        function handleStudentLogin(event) {
+            event.preventDefault();
+            const inputName = normalizeText(document.getElementById('studentUsername').value);
+            const inputPassword = document.getElementById('studentPassword').value.trim();
+            const errorBox = document.getElementById('studentLoginError');
+
+            const matchedStudent = state.students.find(
+                s => normalizeText(s.fullName) === inputName && s.password === inputPassword
+            );
+
+            if (!matchedStudent) {
+                errorBox.textContent = 'Sai tài khoản hoặc mật khẩu! Vui lòng kiểm tra lại đúng Tài khoản (Cột A) và Mật khẩu (Cột C) trong file DS TKMK_2.xlsx.';
+                errorBox.classList.remove('hidden');
+                return;
+            }
+
+            state.currentUser = {
+                role: 'student',
+                studentId: matchedStudent.id,
+                fullName: matchedStudent.fullName
+            };
+
+            closeModal('studentLoginModal');
+            showToast(`Xin chào ${matchedStudent.fullName}! Bạn có thể chọn chỗ ngồi ngay bây giờ.`, 'success');
+            renderApp();
+        }
+
+        function handleAdminLogin(event) {
+            event.preventDefault();
+            const username = document.getElementById('adminUsername').value.trim();
+            const password = document.getElementById('adminPassword').value;
+            const errorBox = document.getElementById('adminLoginError');
+
+            if (username !== ADMIN_CREDENTIALS.username || password !== ADMIN_CREDENTIALS.password) {
+                errorBox.textContent = 'Tài khoản hoặc mật khẩu quản trị viên không chính xác.';
+                errorBox.classList.remove('hidden');
+                return;
+            }
+
+            state.currentUser = {
+                role: 'admin',
+                name: ADMIN_CREDENTIALS.username
+            };
+
+            closeModal('adminLoginModal');
+            showToast('Đăng nhập Quản trị viên thành công!', 'success');
+            renderApp();
+        }
+
+        function logout() {
+            state.currentUser = null;
+            showToast('Bạn đã đăng xuất khỏi hệ thống.', 'info');
+            renderApp();
+        }
+
+        function handleQuickImportClick() {
+            if (state.currentUser?.role === 'admin') {
+                document.getElementById('excelFileInput').click();
+            } else {
+                showToast('Vui lòng đăng nhập Quản trị viên để nhập file DS TKMK_2.xlsx.', 'warning');
+                openAdminLoginModal();
+            }
+        }
+
+        // ==========================================
+        // 5. ĐỌC & XUẤT FILE EXCEL (DS TKMK_2.xlsx: Cột A & Cột C)
+        // ==========================================
+        function handleExcelUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (typeof XLSX === 'undefined') {
+                showToast('Không thể tải thư viện đọc Excel. Vui lòng kiểm tra kết nối mạng.', 'error');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+
+                    // Đọc dữ liệu dạng mảng 2 chiều (giữ nguyên chuỗi để không mất số 0 đầu của mật khẩu)
+                    const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: false, defval: '' });
+
+                    const importedStudents = [];
+                    const seenAccounts = new Set();
+
+                    rows.forEach((row, index) => {
+                        // Cột A = index 0 (Tài khoản), Cột C = index 2 (Mật khẩu)
+                        const colA = String(row[0] || '').trim().replace(/\s+/g, ' ');
+                        const colC = String(row[2] || '').trim();
+
+                        const lowerAccount = colA.toLowerCase();
+                        const lowerPass = colC.toLowerCase();
+
+                        // Bỏ qua dòng trống hoặc dòng tiêu đề
+                        if (!colA || !colC) return;
+                        if (
+                            lowerAccount.includes('tài khoản') ||
+                            lowerAccount.includes('họ và tên') ||
+                            lowerAccount.includes('họ tên') ||
+                            lowerAccount === 'username' ||
+                            lowerAccount === 'stt' ||
+                            lowerPass.includes('mật khẩu') ||
+                            lowerPass.includes('password') ||
+                            lowerPass === 'mk'
+                        ) {
+                            return;
+                        }
+
+                        // Tránh trùng lặp
+                        const uniqueKey = `${lowerAccount}_${colC}`;
+                        if (seenAccounts.has(uniqueKey)) return;
+                        seenAccounts.add(uniqueKey);
+
+                        importedStudents.push({
+                            id: `hs_${index + 1}`,
+                            fullName: colA,
+                            password: colC
+                        });
+                    });
+
+                    if (importedStudents.length === 0) {
+                        showToast('Không tìm thấy dữ liệu hợp lệ ở Cột A (Tài khoản) và Cột C (Mật khẩu).', 'error');
+                        return;
+                    }
+
+                    // Nếu đang chuyển từ dữ liệu mẫu sang file thật thì xóa sơ đồ mẫu cũ
+                    if (state.isSampleData) {
+                        await clearAllSeatsInCloud();
+                    }
+
+                    await saveRosterToCloud(importedStudents, file.name);
+
+                    showToast(`Đã cập nhật & đồng bộ ${importedStudents.length} tài khoản từ "${file.name}"!`, 'success');
+                } catch (err) {
+                    console.error('Lỗi đọc Excel:', err);
+                    showToast('Có lỗi xảy ra khi đọc file Excel. Vui lòng kiểm tra định dạng file.', 'error');
+                } finally {
+                    event.target.value = '';
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function exportSeatingToExcel() {
+            try {
+                const exportData = [];
+                ROWS.forEach(row => {
+                    COLS.forEach(col => {
+                        for (let s = 1; s <= SEATS_PER_DESK; s++) {
+                            const key = `${row}${col}-${s}`;
+                            const seatInfo = state.seats[key];
+                            exportData.push({
+                                'Hàng': row,
+                                'Cột': col,
+                                'Bàn': `${row}${col}`,
+                                'Vị trí ghế': s === 1 ? 'Ghế 1 (Trái)' : 'Ghế 2 (Phải)',
+                                'Họ và tên học sinh': seatInfo ? seatInfo.fullName : '(Trống)',
+                                'Người đăng ký': seatInfo ? (seatInfo.assignedBy === 'admin' ? 'Quản trị viên xếp trước' : 'Học sinh tự chọn') : ''
+                            });
+                        }
+                    });
+                });
+
+                const ws = XLSX.utils.json_to_sheet(exportData);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, 'SoDo_10A15');
+                XLSX.writeFile(wb, 'SoDo_ChoNgoi_10A15.xlsx');
+                showToast('Đã xuất file sơ đồ chỗ ngồi SoDo_ChoNgoi_10A15.xlsx!', 'success');
+            } catch (err) {
+                console.error(err);
+                showToast('Không thể xuất file Excel.', 'error');
+            }
+        }
+
+        // ==========================================
+        // 6. XỬ LÝ CHỌN CHỖ / HỦY CHỖ / QUẢN TRỊ
+        // ==========================================
+        function handleSeatClick(seatKey) {
+            const seatInfo = state.seats[seatKey];
+
+            // Trường hợp 1: Chưa đăng nhập
+            if (!state.currentUser) {
+                if (seatInfo) {
+                    showToast(`${formatSeatName(seatKey)} đã có ${seatInfo.fullName} ngồi.`, 'info');
+                } else {
+                    showToast('Vui lòng đăng nhập tài khoản học sinh để chọn chỗ ngồi.', 'warning');
+                    openStudentLoginModal();
+                }
+                return;
+            }
+
+            // Trường hợp 2: Đang ở chế độ Quản trị viên
+            if (state.currentUser.role === 'admin') {
+                if (seatInfo) {
+                    // Quản trị viên hủy đăng ký cho học sinh
+                    showConfirmModal({
+                        title: 'Hủy đăng ký chỗ ngồi?',
+                        message: `Bạn có chắc muốn hủy chỗ <strong>${formatSeatName(seatKey)}</strong> của học sinh <strong>${seatInfo.fullName}</strong> không?`,
+                        confirmText: 'Hủy đăng ký',
+                        type: 'danger',
+                        onConfirm: async () => {
+                            await deleteSeatFromCloud(seatKey);
+                            showToast(`Đã hủy chỗ ${formatSeatName(seatKey)} của ${seatInfo.fullName}.`, 'success');
+                        }
+                    });
+                } else {
+                    // Quản trị viên đăng ký trước cho học sinh
+                    openAdminAssignModal(seatKey);
+                }
+                return;
+            }
+
+            // Trường hợp 3: Đang đăng nhập là Học sinh
+            if (state.currentUser.role === 'student') {
+                const myId = state.currentUser.studentId;
+                const myName = state.currentUser.fullName;
+                const myCurrentSeat = findSeatByStudentId(myId) || findSeatByStudentName(myName);
+
+                // Nếu nhấn vào ghế của chính mình -> Cho phép hủy chỗ
+                if (seatInfo && (seatInfo.studentId === myId || normalizeText(seatInfo.fullName) === normalizeText(myName))) {
+                    showConfirmModal({
+                        title: 'Hủy chỗ ngồi của bạn?',
+                        message: `Bạn có muốn rời khỏi <strong>${formatSeatName(seatKey)}</strong> để chọn vị trí khác không?`,
+                        confirmText: 'Rời chỗ ngồi',
+                        type: 'danger',
+                        onConfirm: async () => {
+                            await deleteSeatFromCloud(seatKey);
+                            showToast('Bạn đã hủy chỗ ngồi hiện tại.', 'info');
+                        }
+                    });
+                    return;
+                }
+
+                // Nếu nhấn vào ghế đã có bạn khác ngồi
+                if (seatInfo) {
+                    showToast(`Vị trí ${formatSeatName(seatKey)} đã được đăng ký bởi ${seatInfo.fullName}.`, 'warning');
+                    return;
+                }
+
+                // Nếu nhấn vào ghế trống
+                if (myCurrentSeat) {
+                    // Học sinh đã có chỗ -> Hỏi chuyển chỗ
+                    showConfirmModal({
+                        title: 'Chuyển chỗ ngồi?',
+                        message: `Bạn đang ngồi tại <strong>${formatSeatName(myCurrentSeat)}</strong>. Bạn có muốn chuyển sang <strong>${formatSeatName(seatKey)}</strong> không?`,
+                        confirmText: 'Chuyển chỗ',
+                        type: 'primary',
+                        onConfirm: async () => {
+                            await moveSeatInCloud(myCurrentSeat, seatKey, {
+                                studentId: myId,
+                                fullName: myName,
+                                assignedBy: 'student'
+                            });
+                            showToast(`Đã chuyển sang ${formatSeatName(seatKey)} thành công!`, 'success');
+                        }
+                    });
+                } else {
+                    // Học sinh chưa có chỗ -> Xác nhận đăng ký mới
+                    showConfirmModal({
+                        title: 'Xác nhận chọn chỗ ngồi',
+                        message: `Bạn muốn đăng ký ngồi tại <strong>${formatSeatName(seatKey)}</strong> với tài khoản <strong>${myName}</strong>?`,
+                        confirmText: 'Đăng ký ngay',
+                        type: 'primary',
+                        onConfirm: async () => {
+                            await saveSeatToCloud(seatKey, {
+                                studentId: myId,
+                                fullName: myName,
+                                assignedBy: 'student'
+                            });
+                            showToast(`Đăng ký thành công ${formatSeatName(seatKey)}!`, 'success');
+                        }
+                    });
+                }
+            }
+        }
+
+        // ==========================================
+        // 7. CÁC CHỨC NĂNG MODAL CỦA QUẢN TRỊ VIÊN
+        // ==========================================
+        function openAdminAssignModal(seatKey) {
+            state.selectedSeatKeyForAdmin = seatKey;
+            document.getElementById('assignSeatLabel').textContent = `Vị trí đang chọn: ${formatSeatName(seatKey)}`;
+            document.getElementById('assignSearchInput').value = '';
+            document.getElementById('manualStudentName').value = '';
+            renderAdminAssignList();
+            openModal('adminAssignModal');
+            setTimeout(() => document.getElementById('assignSearchInput').focus(), 100);
+        }
+
+        function renderAdminAssignList() {
+            const container = document.getElementById('adminAssignList');
+            const keyword = normalizeText(document.getElementById('assignSearchInput').value);
+
+            // Lọc các học sinh chưa có chỗ ngồi
+            const unassigned = state.students.filter(s => {
+                const alreadySeated = findSeatByStudentId(s.id) || findSeatByStudentName(s.fullName);
+                if (alreadySeated) return false;
+                if (!keyword) return true;
+                return normalizeText(s.fullName).includes(keyword);
+            });
+
+            if (unassigned.length === 0) {
+                container.innerHTML = `
+                    <div class="py-8 text-center text-sm text-slate-400">
+                        Không tìm thấy học sinh nào chưa có chỗ ngồi phù hợp.
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = unassigned.map(student => `
+                <button onclick="assignStudentToSelectedSeat('${student.id}')"
+                    class="w-full text-left px-3.5 py-2.5 bg-white hover:bg-indigo-50 border border-slate-200 hover:border-indigo-300 rounded-xl flex items-center justify-between transition group cursor-pointer">
+                    <span class="font-medium text-sm text-slate-800 group-hover:text-indigo-700">${student.fullName}</span>
+                    <span class="text-xs font-semibold text-indigo-600 bg-indigo-50 group-hover:bg-indigo-600 group-hover:text-white px-2.5 py-1 rounded-lg transition">Chọn</span>
+                </button>
+            `).join('');
+        }
+
+        async function assignStudentToSelectedSeat(studentId) {
+            const seatKey = state.selectedSeatKeyForAdmin;
+            const student = state.students.find(s => s.id === studentId);
+            if (!seatKey || !student) return;
+
+            closeModal('adminAssignModal');
+            await saveSeatToCloud(seatKey, {
+                studentId: student.id,
+                fullName: student.fullName,
+                assignedBy: 'admin'
+            });
+            showToast(`Đã đăng ký trước ${formatSeatName(seatKey)} cho ${student.fullName}.`, 'success');
+        }
+
+        async function assignManualStudent() {
+            const seatKey = state.selectedSeatKeyForAdmin;
+            const nameInput = document.getElementById('manualStudentName').value.trim().replace(/\s+/g, ' ');
+            if (!seatKey || !nameInput) {
+                showToast('Vui lòng nhập họ tên học sinh.', 'warning');
+                return;
+            }
+
+            // Kiểm tra xem học sinh này đã có chỗ chưa
+            const existingSeat = findSeatByStudentName(nameInput);
+            if (existingSeat) {
+                showToast(`Học sinh ${nameInput} đã ngồi tại ${formatSeatName(existingSeat)}.`, 'warning');
+                return;
+            }
+
+            const matchedInList = state.students.find(s => normalizeText(s.fullName) === normalizeText(nameInput));
+            closeModal('adminAssignModal');
+            await saveSeatToCloud(seatKey, {
+                studentId: matchedInList ? matchedInList.id : `manual_${Date.now()}`,
+                fullName: matchedInList ? matchedInList.fullName : nameInput,
+                assignedBy: 'admin'
+            });
+            showToast(`Đã xếp ${nameInput} vào ${formatSeatName(seatKey)}.`, 'success');
+        }
+
+        function confirmClearAllSeats() {
+            const occupiedCount = Object.keys(state.seats).length;
+            if (occupiedCount === 0) {
+                showToast('Sơ đồ hiện đang trống, không có chỗ nào để xóa.', 'info');
+                return;
+            }
+
+            showConfirmModal({
+                title: 'Xóa toàn bộ sơ đồ chỗ ngồi?',
+                message: `Hành động này sẽ hủy đăng ký của tất cả <strong>${occupiedCount} học sinh</strong> đang có chỗ. Bạn có chắc chắn muốn tiếp tục?`,
+                confirmText: 'Xóa toàn bộ',
+                type: 'danger',
+                onConfirm: async () => {
+                    await clearAllSeatsInCloud();
+                    showToast('Đã xóa toàn bộ sơ đồ chỗ ngồi.', 'success');
+                }
+            });
+        }
+
+        function openStudentListModal() {
+            state.showPasswordsInModal = false;
+            document.getElementById('studentListSearch').value = '';
+            updateTogglePwdButton();
+            renderStudentListTable();
+            openModal('studentListModal');
+        }
+
+        function toggleShowPasswords() {
+            state.showPasswordsInModal = !state.showPasswordsInModal;
+            updateTogglePwdButton();
+            renderStudentListTable();
+        }
+
+        function updateTogglePwdButton() {
+            const btn = document.getElementById('togglePwdBtn');
+            btn.innerHTML = state.showPasswordsInModal
+                ? '<i data-lucide="eye-off" class="w-4 h-4"></i><span>Ẩn mật khẩu</span>'
+                : '<i data-lucide="eye" class="w-4 h-4"></i><span>Hiện mật khẩu</span>';
+            lucide.createIcons();
+        }
+
+        function renderStudentListTable() {
+            const tbody = document.getElementById('studentListTableBody');
+            const keyword = normalizeText(document.getElementById('studentListSearch').value);
+
+            document.getElementById('studentListSubtitle').textContent =
+                `Tổng số: ${state.students.length} học sinh • Đã có chỗ: ${Object.keys(state.seats).length}`;
+
+            const filtered = state.students.filter(s => {
+                if (!keyword) return true;
+                const seatKey = findSeatByStudentId(s.id) || findSeatByStudentName(s.fullName) || '';
+                return normalizeText(s.fullName).includes(keyword) || normalizeText(seatKey).includes(keyword);
+            });
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-slate-400">Không tìm thấy học sinh phù hợp.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = filtered.map((student, idx) => {
+                const seatKey = findSeatByStudentId(student.id) || findSeatByStudentName(student.fullName);
+                const pwdDisplay = state.showPasswordsInModal ? student.password : '••••••••';
+
+                return `
+                    <tr class="hover:bg-slate-50 transition">
+                        <td class="py-3 px-4 text-slate-500 font-medium">${idx + 1}</td>
+                        <td class="py-3 px-4 font-semibold text-slate-800">${student.fullName}</td>
+                        <td class="py-3 px-4 font-mono text-xs text-slate-600">${pwdDisplay}</td>
+                        <td class="py-3 px-4">
+                            ${seatKey
+                                ? `<span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-indigo-100 text-indigo-700">${formatSeatName(seatKey)}</span>`
+                                : `<span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-100 text-slate-500">Chưa chọn</span>`
+                            }
+                        </td>
+                        <td class="py-3 px-4 text-right">
+                            ${seatKey
+                                ? `<button onclick="adminCancelFromList('${seatKey}')" class="text-xs font-semibold text-rose-600 hover:text-rose-700 hover:bg-rose-50 px-2.5 py-1.5 rounded-lg transition cursor-pointer">Hủy chỗ</button>`
+                                : `<span class="text-xs text-slate-300">—</span>`
+                            }
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        async function adminCancelFromList(seatKey) {
+            const seatInfo = state.seats[seatKey];
+            if (!seatInfo) return;
+            await deleteSeatFromCloud(seatKey);
+            showToast(`Đã hủy chỗ ${formatSeatName(seatKey)} của ${seatInfo.fullName}.`, 'info');
+            renderStudentListTable();
+        }
+
+        // ==========================================
+        // 8. RENDER GIAO DIỆN CHÍNH
+        // ==========================================
+        function renderHeader() {
+            const container = document.getElementById('headerActions');
+
+            if (!state.currentUser) {
+                container.innerHTML = `
+                    <button onclick="openStudentLoginModal()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl shadow-sm transition flex items-center gap-2 cursor-pointer">
+                        <i data-lucide="log-in" class="w-4 h-4"></i>
+                        <span>Đăng nhập Học sinh</span>
+                    </button>
+                    <button onclick="openAdminLoginModal()" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold rounded-xl shadow-sm transition flex items-center gap-2 cursor-pointer">
+                        <i data-lucide="shield" class="w-4 h-4"></i>
+                        <span>Quản trị viên</span>
+                    </button>
+                `;
+            } else if (state.currentUser.role === 'admin') {
+                container.innerHTML = `
+                    <div class="flex items-center gap-2 px-3.5 py-2 bg-slate-900 text-white rounded-xl text-xs sm:text-sm font-semibold">
+                        <i data-lucide="shield-check" class="w-4 h-4 text-emerald-400"></i>
+                        <span>Admin: ${state.currentUser.name}</span>
+                    </div>
+                    <button onclick="logout()" class="px-3.5 py-2 bg-slate-100 hover:bg-rose-50 text-slate-700 hover:text-rose-600 text-sm font-semibold rounded-xl transition flex items-center gap-1.5 cursor-pointer">
+                        <i data-lucide="log-out" class="w-4 h-4"></i>
+                        <span>Đăng xuất</span>
+                    </button>
+                `;
+            } else {
+                const mySeat = findSeatByStudentId(state.currentUser.studentId) || findSeatByStudentName(state.currentUser.fullName);
+                container.innerHTML = `
+                    <div class="flex items-center gap-2 px-3.5 py-2 bg-indigo-50 border border-indigo-200 text-indigo-800 rounded-xl text-xs sm:text-sm font-semibold">
+                        <i data-lucide="user" class="w-4 h-4 text-indigo-600"></i>
+                        <span>${state.currentUser.fullName}</span>
+                        ${mySeat ? `<span class="ml-1 px-2 py-0.5 bg-emerald-500 text-white text-[11px] rounded-md">${mySeat}</span>` : ''}
+                    </div>
+                    <button onclick="openAdminLoginModal()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs sm:text-sm font-semibold rounded-xl transition flex items-center gap-1.5 cursor-pointer" title="Chuyển sang Quản trị viên">
+                        <i data-lucide="shield" class="w-4 h-4"></i>
+                        <span class="hidden sm:inline">Quản trị viên</span>
+                    </button>
+                    <button onclick="logout()" class="px-3.5 py-2 bg-slate-100 hover:bg-rose-50 text-slate-700 hover:text-rose-600 text-sm font-semibold rounded-xl transition flex items-center gap-1.5 cursor-pointer">
+                        <i data-lucide="log-out" class="w-4 h-4"></i>
+                        <span>Đăng xuất</span>
+                    </button>
+                `;
+            }
+        }
+
+        function renderStatsAndPanels() {
+            const totalSeats = ROWS.length * COLS.length * SEATS_PER_DESK;
+            const occupied = Object.keys(state.seats).length;
+            const available = totalSeats - occupied;
+
+            document.getElementById('statTotal').textContent = totalSeats;
+            document.getElementById('statOccupied').textContent = occupied;
+            document.getElementById('statAvailable').textContent = available;
+            document.getElementById('statStudents').textContent = state.students.length;
+            document.getElementById('adminStudentCount').textContent = state.students.length;
+
+            // Hiển thị/ẩn banner dữ liệu mẫu
+            const sampleBanner = document.getElementById('sampleDataBanner');
+            if (state.isSampleData) {
+                sampleBanner.classList.remove('hidden');
+            } else {
+                sampleBanner.classList.add('hidden');
+            }
+
+            // Hiển thị/ẩn bảng điều khiển quản trị viên
+            const adminPanel = document.getElementById('adminPanel');
+            if (state.currentUser?.role === 'admin') {
+                adminPanel.classList.remove('hidden');
+            } else {
+                adminPanel.classList.add('hidden');
+            }
+
+            // Cập nhật dòng gợi ý theo vai trò
+            const hint = document.getElementById('userHintText');
+            if (!state.currentUser) {
+                hint.innerHTML = 'Vui lòng <button onclick="openStudentLoginModal()" class="text-indigo-600 font-semibold hover:underline cursor-pointer">đăng nhập học sinh</button> để đăng ký chỗ ngồi.';
+            } else if (state.currentUser.role === 'admin') {
+                hint.innerHTML = '<span class="text-indigo-600 font-semibold">Chế độ Quản trị:</span> Nhấn ghế trống để xếp chỗ trước, nhấn ghế có người để hủy.';
+            } else {
+                const mySeat = findSeatByStudentId(state.currentUser.studentId) || findSeatByStudentName(state.currentUser.fullName);
+                hint.innerHTML = mySeat
+                    ? `Chỗ của bạn: <strong class="text-emerald-600">${formatSeatName(mySeat)}</strong> (Nhấn ghế trống khác để đổi chỗ).`
+                    : 'Nhấn vào bất kỳ <strong>ghế trống</strong> nào để đăng ký chỗ ngồi của bạn.';
+            }
+        }
+
+        function renderSeatingGrid() {
+            const grid = document.getElementById('seatingGrid');
+            const isAdmin = state.currentUser?.role === 'admin';
+            const isStudent = state.currentUser?.role === 'student';
+
+            grid.innerHTML = ROWS.map(row => {
+                // Tạo 4 bàn cho mỗi hàng, có lối đi ở giữa cột 2 và cột 3
+                const desksHtml = COLS.map((col, idx) => {
+                    const deskCode = `${row}${col}`;
+                    const seat1Key = `${deskCode}-1`;
+                    const seat2Key = `${deskCode}-2`;
+
+                    const renderSeatButton = (seatKey, seatNum) => {
+                        const seatInfo = state.seats[seatKey];
+                        const isMine = isStudent && seatInfo && (
+                            seatInfo.studentId === state.currentUser.studentId ||
+                            normalizeText(seatInfo.fullName) === normalizeText(state.currentUser.fullName)
+                        );
+
+                        if (seatInfo) {
+                            // Ghế đã có người ngồi
+                            const bgClass = isMine
+                                ? 'bg-emerald-500 hover:bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                                : isAdmin
+                                    ? 'bg-indigo-100 hover:bg-rose-100 text-indigo-900 hover:text-rose-800 border-indigo-300 hover:border-rose-300'
+                                    : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-900 border-indigo-200';
+
+                            const subLabel = isMine
+                                ? 'Chỗ của bạn'
+                                : (isAdmin ? 'Nhấn để hủy' : `Ghế ${seatNum}`);
+
+                            return `
+                                <button onclick="handleSeatClick('${seatKey}')"
+                                    title="${seatInfo.fullName} (${formatSeatName(seatKey)})"
+                                    class="flex-1 min-w-0 px-2 py-2.5 rounded-xl border text-center transition flex flex-col items-center justify-center gap-0.5 cursor-pointer group ${bgClass}">
+                                    <span class="text-[11px] font-bold leading-tight line-clamp-2 break-words w-full">${getShortDisplayName(seatInfo.fullName)}</span>
+                                    <span class="text-[10px] ${isMine ? 'text-emerald-100' : 'text-indigo-500 group-hover:text-rose-600'} font-medium">${subLabel}</span>
+                                </button>
+                            `;
+                        } else {
+                            // Ghế trống
+                            const emptyClass = isAdmin
+                                ? 'bg-white hover:bg-emerald-50 border-dashed border-slate-300 hover:border-emerald-400 text-slate-400 hover:text-emerald-700'
+                                : 'bg-white hover:bg-indigo-50 border-dashed border-slate-300 hover:border-indigo-400 text-slate-400 hover:text-indigo-600';
+
+                            return `
+                                <button onclick="handleSeatClick('${seatKey}')"
+                                    title="Ghế trống (${formatSeatName(seatKey)})"
+                                    class="flex-1 min-w-0 px-2 py-2.5 rounded-xl border-2 text-center transition flex flex-col items-center justify-center gap-0.5 cursor-pointer ${emptyClass}">
+                                    <span class="text-xs font-semibold">Trống</span>
+                                    <span class="text-[10px] opacity-75">Ghế ${seatNum}</span>
+                                </button>
+                            `;
+                        }
+                    };
+
+                    const deskBlock = `
+                        <div class="bg-slate-100/80 border border-slate-200/90 rounded-2xl p-2 flex flex-col gap-1.5 shadow-xs">
+                            <div class="flex items-center justify-between px-1">
+                                <span class="text-[11px] font-extrabold text-slate-500">Bàn ${deskCode}</span>
+                                <span class="text-[10px] text-slate-400 font-medium">Ghế đôi</span>
+                            </div>
+                            <div class="flex gap-1.5 min-h-[60px]">
+                                ${renderSeatButton(seat1Key, 1)}
+                                ${renderSeatButton(seat2Key, 2)}
+                            </div>
+                        </div>
+                    `;
+
+                    // Chèn khoảng trống lối đi giữa Cột 2 và Cột 3
+                    return idx === 1 ? `${deskBlock}<div class="flex items-center justify-center"><div class="w-1 h-8 rounded-full bg-slate-100"></div></div>` : deskBlock;
+                }).join('');
+
+                return `
+                    <div class="grid grid-cols-[44px_1fr_1fr_24px_1fr_1fr] gap-3 items-center">
+                        <div class="w-10 h-10 rounded-xl bg-slate-800 text-white font-extrabold text-sm flex items-center justify-center shadow-sm">
+                            ${row}
+                        </div>
+                        ${desksHtml}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderApp() {
+            renderHeader();
+            renderStatsAndPanels();
+            renderSeatingGrid();
+            lucide.createIcons();
+        }
+
+        // Gắn các hàm vào window để HTML inline handlers (onclick, onsubmit, oninput, onchange) gọi được từ module
+        Object.assign(window, {
+            openModal,
+            closeModal,
+            openStudentLoginModal,
+            openAdminLoginModal,
+            handleStudentLogin,
+            handleAdminLogin,
+            logout,
+            handleQuickImportClick,
+            handleExcelUpload,
+            exportSeatingToExcel,
+            handleSeatClick,
+            renderAdminAssignList,
+            assignStudentToSelectedSeat,
+            assignManualStudent,
+            confirmClearAllSeats,
+            openStudentListModal,
+            toggleShowPasswords,
+            renderStudentListTable,
+            adminCancelFromList
+        });
+
+        // Khởi chạy ứng dụng & kích hoạt đồng bộ thời gian thực
+        window.addEventListener('DOMContentLoaded', () => {
+            renderApp();
+            initRealtimeSync();
+        });
+    </script>
+</body>
+</html>
